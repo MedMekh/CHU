@@ -1198,5 +1198,18 @@
             // إنشاء سكريبت يحتوي على البيانات المضمنة
         
  const embedScript = `<script>\n// البيانات المضمنة للحفظ\nlet embeddedData = ${dataJSON};\n</script>`;
+
+     // إدراج البيانات المضمنة قبل إغلاق وسم body
+            html = html.replace('</body>', embedScript + '</body>');
+
+            // إنشاء رابط لتحميل الملف
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'index.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
     </script>
 </body>
