@@ -359,6 +359,7 @@
                 <button class="tab-btn" data-tab="contact">معلومات الاتصال</button>
                 <button class="tab-btn" data-tab="activities">حصيلة النشاطات</button>
                 <button class="tab-btn" data-tab="settings">تغيير بيانات الدخول</button>
+                <button class="tab-btn" data-tab="reset" style="background:#dc3545;color:white;">تحديث البيانات</button>
             </div>
 
             <!-- المصالح -->
@@ -444,6 +445,20 @@
                 <div class="form-group"><label>اسم المستخدم الجديد</label><input type="text" id="newUsername" class="form-control"></div>
                 <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="newPassword" class="form-control"></div>
                 <button class="btn-save" onclick="changeCredentials()">حفظ التغييرات</button>
+            </div>
+
+            <!-- تحديث البيانات -->
+            <div class="tab-pane" id="tab-reset">
+                <h3>تحديث البيانات من الملف</h3>
+                <p>إذا كانت البيانات المعروضة قديمة، يمكنك تحديثها من الملف الحالي.</p>
+                <div class="form-group">
+                    <label>اختر ملف HTML محفوظ:</label>
+                    <input type="file" id="htmlFileInput" class="form-control" accept=".html">
+                </div>
+                <button class="btn-save" onclick="reloadDataFromFile()" style="background:#dc3545;">تحديث البيانات</button>
+                <hr style="margin:30px 0;">
+                <h4>أو</h4>
+                <button class="btn-save" onclick="resetToDefaultData()" style="background:#6c757d;">إعادة تعيين البيانات الافتراضية</button>
             </div>
         </div>
     </div>
@@ -626,7 +641,7 @@
         let autoPlayInterval;
         let currentIndex = 1;
         let isAnimating = false;
-        let embeddedData = null; // سيتم تعبئته عند فتح ملف محفوظ (إذا وُجد)
+        var embeddedData = null; // سيتم تعبئته عند فتح ملف محفوظ (إذا وُجد)
 
         // ===== دوال مساعدة للفيديو ===== //
         function getFacebookEmbedUrl(url) {
@@ -642,9 +657,10 @@
         // ===== تحميل البيانات ===== //
         function loadData() {
             // إذا وُجدت بيانات مضمنة (من ملف HTML محفوظ)، استخدمها فورًا
-            if (embeddedData) {
+            if (typeof embeddedData !== 'undefined' && embeddedData !== null) {
                 // تحديث localStorage لتعمل الجلسة الحالية بهذه البيانات
                 localStorage.setItem('hospitalData', JSON.stringify(embeddedData));
+                console.log('تم تحميل البيانات من الملف المضمنة');
                 return embeddedData;
             }
 
@@ -1200,7 +1216,7 @@
         
  const embedScript = `<script>
 // البيانات المضمنة للحفظ
-let embeddedData = ${dataJSON};
+var embeddedData = ${dataJSON};
 <\/script>`;
 
             // إدراج السكريبت قبل نهاية body
@@ -1225,6 +1241,67 @@ let embeddedData = ${dataJSON};
                 logout();
             } else {
                 document.getElementById('loginModal').classList.add('active');
+            }
+        }
+
+        // دالة لإعادة تحميل البيانات من الملف
+        function reloadDataFromFile() {
+            const fileInput = document.getElementById('htmlFileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('الرجاء اختيار ملف HTML أولاً');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const htmlContent = e.target.result;
+
+                // البحث عن embeddedData في الملف
+                const match = htmlContent.match(/var embeddedData = ({[\s\S]*?});/);
+                if (match && match[1]) {
+                    try {
+                        const data = JSON.parse(match[1]);
+
+                        // تحديث localStorage
+                        localStorage.setItem('hospitalData', JSON.stringify(data));
+
+                        // تحديث appData
+                        appData = data;
+
+                        // إعادة عرض الصفحة
+                        renderHome();
+                        renderServicesPage();
+                        renderActivities();
+                        renderVideos();
+                        renderDashboard();
+
+                        alert('تم تحديث البيانات بنجاح!');
+                    } catch (err) {
+                        alert('خطأ في قراءة البيانات من الملف: ' + err.message);
+                    }
+                } else {
+                    alert('لم يتم العثور على بيانات في الملف المحدد');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // دالة لإعادة تعيين البيانات الافتراضية
+        function resetToDefaultData() {
+            if (confirm('هل أنت متأكد من إعادة تعيين البيانات إلى القيم الافتراضية؟ سيتم حذف جميع التغييرات.')) {
+                localStorage.removeItem('hospitalData');
+                appData = JSON.parse(JSON.stringify(defaultData));
+
+                // إعادة عرض الصفحة
+                renderHome();
+                renderServicesPage();
+                renderActivities();
+                renderVideos();
+                renderDashboard();
+
+                alert('تم إعادة تعيين البيانات الافتراضية!');
             }
         }
 
