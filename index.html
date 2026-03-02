@@ -216,6 +216,7 @@
             .contact-simple p { font-size: 1rem; }
         }
     </style>
+<base target="_blank">
 </head><body style="">
     <header>
         <div class="logo">
@@ -534,7 +535,7 @@
     <footer>
         <p>© 2026 المركز الاستشفائي الجامعي بني مسوس. جميع الحقوق محفوظة.</p>
         <div class="hidden-buttons" style="display: flex;">
-            <button class="login-btn" id="loginBtnFooter"><i class="fas fa-user"></i> تسجيل الدخول</button>
+            <button class="login-btn" id="loginBtnFooter" onclick="toggleLogin()"><i class="fas fa-user"></i> تسجيل الدخول</button>
             <button class="login-btn" onclick="window.saveHTML()"><i class="fas fa-save"></i> حفظ</button>
         </div>
     </footer>
@@ -1186,8 +1187,8 @@
             if (isLoggedIn) { btn.innerHTML = '<i class="fas fa-sign-out-alt"></i> تسجيل خروج'; btn.classList.add('logout-btn'); }
             else { btn.innerHTML = '<i class="fas fa-user"></i> تسجيل الدخول'; btn.classList.remove('logout-btn'); }
         }
-        
-       // ===== دالة حفظ HTML مع تضمين البيانات ===== //
+
+        // ===== دالة حفظ HTML مع تضمين البيانات ===== //
         function saveHTML() {
             // الحصول على هيكل الصفحة الحالي
             let html = document.documentElement.outerHTML;
@@ -1197,7 +1198,78 @@
 
             // إنشاء سكريبت يحتوي على البيانات المضمنة
         
- const embedScript = `<script>\n// البيانات المضمنة للحفظ\nlet embeddedData = ${dataJSON};\n</script>`;
+ const embedScript = `<script>
+// البيانات المضمنة للحفظ
+let embeddedData = ${dataJSON};
+<\/script>`;
+
+            // إدراج السكريبت قبل نهاية body
+            html = html.replace('</body>', embedScript + '</body>');
+
+            // إنشاء ملف للتحميل
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'index.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('تم حفظ الملف بنجاح!');
         }
+
+        // دالة toggleLogin لفتح/إغلاق نافذة تسجيل الدخول
+        function toggleLogin() {
+            if (isLoggedIn) {
+                logout();
+            } else {
+                document.getElementById('loginModal').classList.add('active');
+            }
+        }
+
+        // دالة تبديل التبويبات في لوحة التحكم
+        function initTabs() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+
+                    // إزالة active من جميع الأزرار والأقسام
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+                    // إضافة active للزر والقسم المحدد
+                    this.classList.add('active');
+                    document.getElementById('tab-' + tabId).classList.add('active');
+                });
+            });
+        }
+
+        // ===== تهيئة التطبيق ===== //
+        document.addEventListener('DOMContentLoaded', function() {
+            appData = loadData();
+
+            // التحقق من حالة تسجيل الدخول
+            if (sessionStorage.getItem('loggedIn') === 'true') {
+                isLoggedIn = true;
+                updateLoginButton();
+            }
+
+            // تهيئة التبويبات
+            initTabs();
+
+            // عرض الصفحة الرئيسية
+            renderHome();
+            renderServicesPage();
+            renderActivities();
+            renderVideos();
+
+            // حدث القائمة المتنقلة
+            document.getElementById('menuToggle').addEventListener('click', function() {
+                document.getElementById('mainNav').classList.toggle('active');
+            });
+        });
     </script>
 </body>
+</html>
